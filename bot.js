@@ -16,21 +16,41 @@ bot.on('message', message => {
         message.react('🇨');
         message.react('🇩');
     }
-    switch (message.content.toLowerCase()) {
-        case "!ping":
-            message.channel.send("Pong");
-            break;
-        case "toaster strudel":
-            message.channel.send("Erica!");
-            break;
-        case "movie poll":
-            generatePoll(message);
-            break;
-        case "valorant":
+    if (message.author.username != "BriBot") {
+        //commands
+        switch (message.content.toLowerCase()) {
+            case "ping":
+                message.channel.send("Pong");
+                break;
+            case "movie poll":
+                generatePoll(message);
+                break;
+            case "f":
+                message.channel.send("F");
+                break;
+            case "countdown":
+                setTimeout(() => message.channel.send("3"), 1000);
+                setTimeout(() => message.channel.send("2"), 2000);
+                setTimeout(() => message.channel.send("1"), 3000);
+                setTimeout(() => message.channel.send("Go"), 4000);
+                break;
+        }
+
+        //random responses
+        if (message.content.toLowerCase().includes("valorant")) {
             message.channel.send("Valorant!");
-            break;
+        } else if (message.content.toLowerCase().includes("did you know")) {
+            message.channel.send("Obviously");
+        } else if (message.content.toLowerCase().includes("ac")) {
+            message.channel.send("Obviously");
+        } else if (message.content.toLowerCase().includes("animal crossing")) {
+            message.channel.send("Obviously");
+        } else if (message.content.toLowerCase().includes("toaster strudel")) {
+            message.channel.send("Erica!");
+        } 
     }
 });
+
 
 bot.login(auth.Token);
 
@@ -77,7 +97,7 @@ async function generatePoll(message) {
         }
     });
 
-        //get 4 unique movies
+    //get 4 unique movies
     let opt1 = 0, opt2 = 0, opt3 = 0, opt4 = 0;
     while(opt1 == opt2 || opt1 == opt3 || opt1 == opt4 || opt2 == opt3 || opt2 == opt4 || opt3 == opt4) {
         opt1 = Math.floor(Math.random()*titles.length);
@@ -102,7 +122,7 @@ async function generatePoll(message) {
             + ":regional_indicator_d: " + movie4.title + " | " + movie4.platform + " | " + movie4.details.Runtime + " | " + movie4.details.imdbRating +  "\n");
     } else {
         let general = bot.channels.cache.get("689660661923446864");
-        general.send("Movies: \n" + ":regional_indicator_a: " + movie1.title + " | " + movie1.platform + " | " + movie1.details.Runtime + " | " + movie1.details.imdbRating +  "\n" 
+        general.send("(beta) Movies: \n" + ":regional_indicator_a: " + movie1.title + " | " + movie1.platform + " | " + movie1.details.Runtime + " | " + movie1.details.imdbRating +  "\n" 
         + ":regional_indicator_b: " + movie2.title + " | " + movie2.platform + " | " + movie2.details.Runtime + " | " + movie2.details.imdbRating +  "\n" 
         + ":regional_indicator_c: " + movie3.title + " | " + movie3.platform + " | " + movie3.details.Runtime + " | " + movie3.details.imdbRating +  "\n"
         + ":regional_indicator_d: " + movie4.title + " | " + movie4.platform + " | " + movie4.details.Runtime + " | " + movie4.details.imdbRating +  "\n");
