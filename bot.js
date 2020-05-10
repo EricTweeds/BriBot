@@ -1,5 +1,5 @@
 const Discord = require("discord.js");
-
+const fetch = require("node-fetch");
 const auth = require('./auth.json');
 
 // Initialize Discord Bot
@@ -34,7 +34,26 @@ bot.on('message', message => {
 
 bot.login(auth.Token);
 
-function generatePoll(message) {
+
+//automatically poll general channel at Noon
+var now = new Date();
+var millisTillNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0) - now;
+if (millisTillNoon < 0) {
+     millisTillNoon += 86400000; // it's after Noon, try Noon tomorrow.
+}
+
+console.log("time until poll: " + millisTillNoon);
+setTimeout(autoPoll, millisTillNoon);
+
+function autoPoll() {
+    generatePoll();
+    setInterval(() => {
+        console.log("poll");
+        generatePoll()
+    }, 86400000);
+}
+
+async function generatePoll(message) {
     var moviesChannel = bot.channels.cache.get("705311653113233444");
     lots_of_messages_getter(moviesChannel).then(movies => {
         let titles = [];
@@ -66,11 +85,20 @@ function generatePoll(message) {
             opt3 = Math.floor(Math.random()*titles.length);
             opt4 = Math.floor(Math.random()*titles.length);
         }
-        
-        message.channel.send("Movies: \n" + ":regional_indicator_a: " + titles[opt1].title + " " + titles[opt1].platform +  "\n" 
+
+        await getMovieDetails();
+        if (message) {
+            message.channel.send("Movies: \n" + ":regional_indicator_a: " + titles[opt1].title + " " + titles[opt1].platform +  "\n" 
+                + ":regional_indicator_b: " + titles[opt2].title + " " + titles[opt2].platform + "\n" 
+                + ":regional_indicator_c: " + titles[opt3].title + " " + titles[opt3].platform + "\n" 
+                + ":regional_indicator_d: " + titles[opt4].title + " " + titles[opt4].platform);
+        } else {
+            let general = bot.channels.cache.get("689660661923446864");
+            general.send("Movies: \n" + ":regional_indicator_a: " + titles[opt1].title + " " + titles[opt1].platform +  "\n" 
             + ":regional_indicator_b: " + titles[opt2].title + " " + titles[opt2].platform + "\n" 
             + ":regional_indicator_c: " + titles[opt3].title + " " + titles[opt3].platform + "\n" 
             + ":regional_indicator_d: " + titles[opt4].title + " " + titles[opt4].platform);
+        }
     });
 }
 
