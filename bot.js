@@ -227,7 +227,7 @@ async function sendMovieDetails(message) {
                     response += rating.Source + ": " + rating.Value + "\n";
                 });
             } else {
-                response += keys[i] + ": "  + JSON.stringify(values[i]) + "\n";
+                response += keys[i] + ": "  + values[i] + "\n";
             }
         }
         message.channel.send(response);
@@ -239,11 +239,13 @@ async function sendMovieDetails(message) {
 async function getMovieDetails(title) {
     let search = await fetch(`http://www.omdbapi.com/?s=${title}&apikey=${auth.OMDB_API_KEY}`).then(res => res.json());
     let id = "";
-    search.Search.forEach(movie => {
-        if (movie.Title.toLowerCase() === title && id == "") {
-            id = movie.imdbID;
-        }
-    });
+    if (search && search.Search) {
+        search.Search.forEach(movie => {
+            if (movie.Title.toLowerCase() === title.toLowerCase() && id == "") {
+                id = movie.imdbID;
+            }
+        });
+    }
     if (id) {
         return await fetch(`http://www.omdbapi.com/?i=${id}&apikey=${auth.OMDB_API_KEY}`).then(res => res.json());
     } else {
