@@ -42,6 +42,9 @@ bot.on('message', message => {
             case "list genres":
                 message.channel.send(GENRES.join("\n"));
                 break;
+            case "gulag":
+                gulag();
+                break;
         }
 
         if (message.content.toLowerCase().startsWith("movie poll") && message.content.toLowerCase().includes("-g")) {
@@ -69,6 +72,17 @@ bot.on('message', message => {
         } else if (message.content.toLowerCase().includes("toaster strudel")) {
             message.channel.send("Erica!");
         } 
+    }
+});
+
+bot.on('voiceStateUpdate', (oldMember, newMember) => {
+    let newUserChannel = newMember.channelID;
+    let oldUserChannel = oldMember.channelID;
+
+    if(oldUserChannel !== "701617438395072593" && newUserChannel === "701617438395072593") {
+       gulag();
+    } else if(newUserChannel === undefined){
+      // User leaves a voice channel
     }
 });
 
@@ -151,6 +165,18 @@ async function generatePoll(message) {
         + ":regional_indicator_c: " + opt3.title + " | " + opt3.platform + " | " + (opt3.details.Runtime ? opt3.details.Runtime : "N/A") + " | " + (opt3.details.imdbRating ? opt3.details.imdbRating : "N/A") +  "\n"
         + ":regional_indicator_d: " + opt4.title + " | " + opt4.platform + " | " + (opt4.details.Runtime ? opt4.details.Runtime : "N/A") + " | " + (opt4.details.imdbRating ? opt4.details.imdbRating : "N/A") +  "\n");
     }
+}
+
+function gulag() {
+    let gulagChannel = bot.channels.cache.get("701617438395072593");
+    gulagChannel.join().then(connection => {
+        const dispatcher = connection.play("./gulag.mp3", {volume: 0.5});
+        dispatcher.on("finish", end => {
+            gulagChannel.leave();
+        });
+    }).catch(e => {
+        console.log(e);
+    });
 }
 
 async function generatePollWithGenre(message, genre) {
