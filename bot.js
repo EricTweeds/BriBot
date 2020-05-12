@@ -2,6 +2,8 @@ const Discord = require("discord.js");
 const fetch = require("node-fetch");
 const auth = require('./auth.json');
 
+const schedulePoll = false;
+
 const GENRES = ["action", "adventure", "animation", "biography", "comedy", "crime",
                 "documentary", "drama", "family", "fantasy", "film noir", "history",
                 "horror", "music", "musical", "mystery", "romance", "sci-fi",
@@ -79,7 +81,7 @@ bot.on('voiceStateUpdate', (oldMember, newMember) => {
     let newUserChannel = newMember.channelID;
     let oldUserChannel = oldMember.channelID;
 
-    if(oldUserChannel !== "701617438395072593" && newUserChannel === "701617438395072593") {
+    if(oldUserChannel !== auth.GulagID && newUserChannel === auth.GulagID) {
        gulag();
     } else if(newUserChannel === undefined){
       // User leaves a voice channel
@@ -91,25 +93,28 @@ bot.login(auth.Token);
 
 
 //automatically poll general channel at Noon
-var now = new Date();
-var millisTillNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0) - now;
-if (millisTillNoon < 0) {
-     millisTillNoon += 86400000; // it's after Noon, try Noon tomorrow.
+if (schedulePoll) {
+    var now = new Date();
+    var millisTillNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0) - now;
+    if (millisTillNoon < 0) {
+         millisTillNoon += 86400000; // it's after Noon, try Noon tomorrow.
+    }
+    
+    console.log("time until poll: " + millisTillNoon);
+    setTimeout(autoPoll, millisTillNoon);
+    
+    function autoPoll() {
+        generatePoll();
+        setInterval(() => {
+            console.log("poll");
+            generatePoll()
+        }, 86400000);
+    }
 }
 
-console.log("time until poll: " + millisTillNoon);
-setTimeout(autoPoll, millisTillNoon);
-
-function autoPoll() {
-    generatePoll();
-    setInterval(() => {
-        console.log("poll");
-        generatePoll()
-    }, 86400000);
-}
 
 async function generatePoll(message) {
-    var moviesChannel = bot.channels.cache.get("705311653113233444");
+    var moviesChannel = bot.channels.cache.get(auth.MovieID);
     let movies = await lots_of_messages_getter(moviesChannel);
     let titles = [];
     movies.forEach(movie => {
@@ -159,7 +164,7 @@ async function generatePoll(message) {
             + ":regional_indicator_c: " + opt3.title + " | " + opt3.platform + " | " + (opt3.details.Runtime ? opt3.details.Runtime : "N/A") + " | " + (opt3.details.imdbRating ? opt3.details.imdbRating : "N/A") +  "\n"
             + ":regional_indicator_d: " + opt4.title + " | " + opt4.platform + " | " + (opt4.details.Runtime ? opt4.details.Runtime : "N/A") + " | " + (opt4.details.imdbRating ? opt4.details.imdbRating : "N/A") +  "\n");
     } else {
-        let general = bot.channels.cache.get("689660661923446864");
+        let general = bot.channels.cache.get(auth.GeneralID);
         general.send("Movies: \n" + ":regional_indicator_a: " + opt1.title + " | " + opt1.platform + " | " + (opt1.details.Runtime ? opt1.details.Runtime : "N/A") + " | " + (opt1.details.imdbRating ? opt1.details.imdbRating : "N/A") +  "\n" 
         + ":regional_indicator_b: " + opt2.title + " | " + opt2.platform + " | " + (opt2.details.Runtime ? opt2.details.Runtime : "N/A") + " | " + (opt2.details.imdbRating ? opt2.details.imdbRating : "N/A")  +  "\n" 
         + ":regional_indicator_c: " + opt3.title + " | " + opt3.platform + " | " + (opt3.details.Runtime ? opt3.details.Runtime : "N/A") + " | " + (opt3.details.imdbRating ? opt3.details.imdbRating : "N/A") +  "\n"
@@ -168,7 +173,7 @@ async function generatePoll(message) {
 }
 
 function gulag() {
-    let gulagChannel = bot.channels.cache.get("701617438395072593");
+    let gulagChannel = bot.channels.cache.get(auth.GulagID);
     gulagChannel.join().then(connection => {
         const dispatcher = connection.play("./gulag.mp3", {volume: 0.5});
         dispatcher.on("finish", end => {
@@ -180,7 +185,7 @@ function gulag() {
 }
 
 async function generatePollWithGenre(message, genre) {
-    var moviesChannel = bot.channels.cache.get("705311653113233444");
+    var moviesChannel = bot.channels.cache.get(auth.MovieID);
     let movies = await lots_of_messages_getter(moviesChannel);
     let titles = [];
 
