@@ -17,12 +17,6 @@ bot.on('ready', () => {
 });
 
 bot.on('message', message => {
-    if (message.author.username == "BriBot" && message.content.includes("Movies:")) {
-        message.react('🇦');
-        message.react('🇧');
-        message.react('🇨');
-        message.react('🇩');
-    }
     if (message.author.username != "BriBot") {
         //commands
         switch (message.content.toLowerCase()) {
@@ -60,6 +54,9 @@ bot.on('message', message => {
 
         if (message.content.toLowerCase().startsWith("!details")) {
             sendMovieDetails(message);
+        }
+        if (message.content.startsWith("/poll")) {
+            generatePoll(message);
         }
 
         //random responses
@@ -114,43 +111,54 @@ if (schedulePoll) {
 
 
 async function generatePoll(message) {
-    var moviesChannel = bot.channels.cache.get(auth.MovieID);
-    let movies = await lots_of_messages_getter(moviesChannel);
-    let titles = [];
-    movies.forEach(movie => {
-        let platform = "";
-        let count = 0;
-        movie.reactions.cache.forEach(reaction => {
-            if (reaction._emoji.name == '😍') {
-                platform = "N";
-            } else if (reaction._emoji.name == '😆') {
-                platform = "D+";
-            } else if (reaction._emoji.name == '👍') {
-                count = reaction.count;
-            }
-        });
-        if (platform && platform != "") {
-            titles.push({
-                title: movie.content,
-                platform
+    let name = "Movies: \n";
+    let opt1 = {}, opt2 = {}, opt3 = {}, opt4 = {};
+    if (message.content.startsWith("/poll")) {
+        let regex = /\w+|"[^"]+"/g;
+        let words = message.content.match(regex);
+        name = words[1].replace(/\"/g, '') + ": \n";
+        opt1.title = words[2].replace(/\"/g, '');
+        opt2.title = words[3].replace(/\"/g, '');
+        opt3.title = words[4].replace(/\"/g, '');
+        opt4.title = words[5].replace(/\"/g, '');
+    } else {
+        var moviesChannel = bot.channels.cache.get(auth.MovieID);
+        let movies = await lots_of_messages_getter(moviesChannel);
+        let titles = [];
+        movies.forEach(movie => {
+            let platform = "";
+            let count = 0;
+            movie.reactions.cache.forEach(reaction => {
+                if (reaction._emoji.name == '😍') {
+                    platform = "N";
+                } else if (reaction._emoji.name == '😆') {
+                    platform = "D+";
+                } else if (reaction._emoji.name == '👍') {
+                    count = reaction.count;
+                }
             });
-            //add multiple ballots for liked movies
-            for (let i = 0; i < count; i++) {
+            if (platform && platform != "") {
                 titles.push({
                     title: movie.content,
                     platform
                 });
+                //add multiple ballots for liked movies
+                for (let i = 0; i < count; i++) {
+                    titles.push({
+                        title: movie.content,
+                        platform
+                    });
+                }
             }
-        }
-    });
+        });
 
-    //get 4 unique movies
-    let opt1 = 0, opt2 = 0, opt3 = 0, opt4 = 0;
-    while(opt1.title == opt2.title || opt1.title == opt3.title || opt1.title == opt4.title || opt2.title == opt3.title || opt2.title == opt4.title || opt3.title == opt4.title) {
-        opt1 = titles[Math.floor(Math.random()*titles.length)];
-        opt2 = titles[Math.floor(Math.random()*titles.length)];
-        opt3 = titles[Math.floor(Math.random()*titles.length)];
-        opt4 = titles[Math.floor(Math.random()*titles.length)];
+        //get 4 unique movies
+        while(opt1.title == opt2.title || opt1.title == opt3.title || opt1.title == opt4.title || opt2.title == opt3.title || opt2.title == opt4.title || opt3.title == opt4.title) {
+            opt1 = titles[Math.floor(Math.random()*titles.length)];
+            opt2 = titles[Math.floor(Math.random()*titles.length)];
+            opt3 = titles[Math.floor(Math.random()*titles.length)];
+            opt4 = titles[Math.floor(Math.random()*titles.length)];
+        }
     }
 
     opt1.details = await getMovieDetails(opt1.title);
@@ -159,16 +167,26 @@ async function generatePoll(message) {
     opt4.details = await getMovieDetails(opt4.title);
 
     if (message) {
-        message.channel.send("Movies: \n" + ":regional_indicator_a: " + opt1.title + " | " + opt1.platform + " | " + (opt1.details.Runtime ? opt1.details.Runtime : "N/A") + " | " + (opt1.details.imdbRating ? opt1.details.imdbRating : "N/A") +  "\n" 
-            + ":regional_indicator_b: " + opt2.title + " | " + opt2.platform + " | " + (opt2.details.Runtime ? opt2.details.Runtime : "N/A") + " | " + (opt2.details.imdbRating ? opt2.details.imdbRating : "N/A")  +  "\n" 
-            + ":regional_indicator_c: " + opt3.title + " | " + opt3.platform + " | " + (opt3.details.Runtime ? opt3.details.Runtime : "N/A") + " | " + (opt3.details.imdbRating ? opt3.details.imdbRating : "N/A") +  "\n"
-            + ":regional_indicator_d: " + opt4.title + " | " + opt4.platform + " | " + (opt4.details.Runtime ? opt4.details.Runtime : "N/A") + " | " + (opt4.details.imdbRating ? opt4.details.imdbRating : "N/A") +  "\n");
+        message.channel.send(name + ":regional_indicator_a: " + opt1.title +  (opt1.platform ? (" | " + opt1.platform + " | ") : " | ") + (opt1.details.Runtime ? opt1.details.Runtime : "N/A") + " | " + (opt1.details.imdbRating ? opt1.details.imdbRating : "N/A") +  "\n" 
+            + ":regional_indicator_b: " + opt2.title + (opt2.platform ? (" | " + opt2.platform + " | ") : " | ")  + (opt2.details.Runtime ? opt2.details.Runtime : "N/A") + " | " + (opt2.details.imdbRating ? opt2.details.imdbRating : "N/A")  +  "\n" 
+            + ":regional_indicator_c: " + opt3.title + (opt3.platform ? (" | " + opt3.platform + " | ") : " | ")  + (opt3.details.Runtime ? opt3.details.Runtime : "N/A") + " | " + (opt3.details.imdbRating ? opt3.details.imdbRating : "N/A") +  "\n"
+            + ":regional_indicator_d: " + opt4.title + (opt4.platform ? (" | " + opt4.platform + " | ") : " | ")  + (opt4.details.Runtime ? opt4.details.Runtime : "N/A") + " | " + (opt4.details.imdbRating ? opt4.details.imdbRating : "N/A") +  "\n").then(message => {
+                message.react('🇦');
+                message.react('🇧');
+                message.react('🇨');
+                message.react('🇩');
+            });
     } else {
         let general = bot.channels.cache.get(auth.GeneralID);
-        general.send("Movies: \n" + ":regional_indicator_a: " + opt1.title + " | " + opt1.platform + " | " + (opt1.details.Runtime ? opt1.details.Runtime : "N/A") + " | " + (opt1.details.imdbRating ? opt1.details.imdbRating : "N/A") +  "\n" 
-        + ":regional_indicator_b: " + opt2.title + " | " + opt2.platform + " | " + (opt2.details.Runtime ? opt2.details.Runtime : "N/A") + " | " + (opt2.details.imdbRating ? opt2.details.imdbRating : "N/A")  +  "\n" 
-        + ":regional_indicator_c: " + opt3.title + " | " + opt3.platform + " | " + (opt3.details.Runtime ? opt3.details.Runtime : "N/A") + " | " + (opt3.details.imdbRating ? opt3.details.imdbRating : "N/A") +  "\n"
-        + ":regional_indicator_d: " + opt4.title + " | " + opt4.platform + " | " + (opt4.details.Runtime ? opt4.details.Runtime : "N/A") + " | " + (opt4.details.imdbRating ? opt4.details.imdbRating : "N/A") +  "\n");
+        general.send(name + ":regional_indicator_a: " + opt1.title +  (opt1.platform ? (" | " + opt1.platform + " | ") : " | ") + (opt1.details.Runtime ? opt1.details.Runtime : "N/A") + " | " + (opt1.details.imdbRating ? opt1.details.imdbRating : "N/A") +  "\n" 
+        + ":regional_indicator_b: " + opt2.title + (opt2.platform ? (" | " + opt2.platform + " | ") : " | ")  + (opt2.details.Runtime ? opt2.details.Runtime : "N/A") + " | " + (opt2.details.imdbRating ? opt2.details.imdbRating : "N/A")  +  "\n" 
+        + ":regional_indicator_c: " + opt3.title + (opt3.platform ? (" | " + opt3.platform + " | ") : " | ")  + (opt3.details.Runtime ? opt3.details.Runtime : "N/A") + " | " + (opt3.details.imdbRating ? opt3.details.imdbRating : "N/A") +  "\n"
+        + ":regional_indicator_d: " + opt4.title + (opt4.platform ? (" | " + opt4.platform + " | ") : " | ")  + (opt4.details.Runtime ? opt4.details.Runtime : "N/A") + " | " + (opt4.details.imdbRating ? opt4.details.imdbRating : "N/A") +  "\n").then(message => {
+            message.react('🇦');
+            message.react('🇧');
+            message.react('🇨');
+            message.react('🇩');
+        });
     }
 }
 
@@ -233,7 +251,12 @@ async function generatePollWithGenre(message, genre) {
         message.channel.send(capitalize(genre) + " Movies: \n" + ":regional_indicator_a: " + opt1.title + " | " + opt1.platform + " | " + (opt1.details.Runtime ? opt1.details.Runtime : "N/A") + " | " + (opt1.details.imdbRating ? opt1.details.imdbRating : "N/A") +  "\n" 
         + ":regional_indicator_b: " + opt2.title + " | " + opt2.platform + " | " + (opt2.details.Runtime ? opt2.details.Runtime : "N/A") + " | " + (opt2.details.imdbRating ? opt2.details.imdbRating : "N/A")  +  "\n" 
         + ":regional_indicator_c: " + opt3.title + " | " + opt3.platform + " | " + (opt3.details.Runtime ? opt3.details.Runtime : "N/A") + " | " + (opt3.details.imdbRating ? opt3.details.imdbRating : "N/A") +  "\n"
-        + ":regional_indicator_d: " + opt4.title + " | " + opt4.platform + " | " + (opt4.details.Runtime ? opt4.details.Runtime : "N/A") + " | " + (opt4.details.imdbRating ? opt4.details.imdbRating : "N/A") +  "\n");
+        + ":regional_indicator_d: " + opt4.title + " | " + opt4.platform + " | " + (opt4.details.Runtime ? opt4.details.Runtime : "N/A") + " | " + (opt4.details.imdbRating ? opt4.details.imdbRating : "N/A") +  "\n").then(message => {
+            message.react('🇦');
+            message.react('🇧');
+            message.react('🇨');
+            message.react('🇩');
+        });
 
     } else {
         let response = capitalize(genre) + " Movies: \n";
@@ -241,7 +264,12 @@ async function generatePollWithGenre(message, genre) {
         genreMovies.forEach((movie, index) => {
             response += indicators[index] + movie.title + " | " + movie.platform + " | " + (movie.details.Runtime ? movie.details.Runtime : "N/A") + " | " + (movie.details.imdbRating ? movie.details.imdbRating : "N/A") +  "\n";
         });
-        message.channel.send(response);
+        message.channel.send(response).then(message => {
+            message.react('🇦');
+            message.react('🇧');
+            message.react('🇨');
+            message.react('🇩');
+        });
     }
 }
 
