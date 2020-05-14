@@ -2,6 +2,8 @@ const Discord = require("discord.js");
 const fetch = require("node-fetch");
 const auth = require('./auth.json');
 
+var port = process.env.PORT || 8080;
+
 const schedulePoll = false;
 const GENRES = ["action", "adventure", "animation", "biography", "comedy", "crime",
                 "documentary", "drama", "family", "fantasy", "film noir", "history",
