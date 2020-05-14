@@ -3,6 +3,9 @@
     "version": "1.0.0",
     "description": "Replaces Brian",
     "main": "bot.js",
+    "scripts": {
+        "start": "node bot.js"
+    }, 
     "authors": "Eric / Ryan",
     "dependencies": {
         "dblapi.js": "^2.4.0",
