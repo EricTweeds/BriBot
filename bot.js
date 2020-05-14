@@ -3,7 +3,6 @@ const fetch = require("node-fetch");
 const auth = require('./auth.json');
 
 const schedulePoll = false;
-
 const GENRES = ["action", "adventure", "animation", "biography", "comedy", "crime",
                 "documentary", "drama", "family", "fantasy", "film noir", "history",
                 "horror", "music", "musical", "mystery", "romance", "sci-fi",
