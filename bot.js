@@ -1,8 +1,18 @@
 const Discord = require("discord.js");
 const fetch = require("node-fetch");
+const ytdl = require("ytdl-core");
+const request = require("request");
+
 const auth = require('./auth.json');
 
 var port = process.env.PORT || 8080;
+
+const testSong = 'https://www.youtube.com/watch?v=Krw642HTCgw&ab_channel=AudioLibrary%E2%80%94Musicforcontentcreators';
+const youtubeURL = 'https://www.youtube.com/watch?v=';
+
+let dispatcher = null;
+
+let spotifyToken = "";
 
 const schedulePoll = false;
 const GENRES = ["action", "adventure", "animation", "biography", "comedy", "crime",
@@ -15,6 +25,7 @@ var bot = new Discord.Client();
 
 bot.on('ready', () => {
     console.log("Ready!");
+    connectSpotify();
 });
 
 bot.on('message', message => {
@@ -42,6 +53,21 @@ bot.on('message', message => {
             case "gulag":
                 gulag();
                 break;
+            case "play":
+                playmusic();
+                break;
+            case "stop":
+                stopmusic();
+                break;
+            case "resume":
+                resumemusic();
+                break;
+            case "pause":
+                pausemusic();
+                break;
+            case "rick roll":
+                playsong("never gonna give you up");
+                break;
         }
 
         if (message.content.toLowerCase().startsWith("movie poll") && message.content.toLowerCase().includes("-g")) {
@@ -56,6 +82,36 @@ bot.on('message', message => {
         if (message.content.toLowerCase().startsWith("!details")) {
             sendMovieDetails(message);
         }
+
+        if (message.content.toLowerCase().startsWith("volume")) {
+            let volume = message.content.toLowerCase().substr(7);
+            if (isNaN(volume) || volume > 10) {
+                message.channel.send("Invalid volume, 1 is normal, 0.5 is half, 2 is double.");
+            } else {
+                setvolume(volume);
+            }
+        }
+
+        if (message.content.toLowerCase().startsWith("play song")) {
+            let song = message.content.toLowerCase().substr(10);
+            if (song == "" || !song) {
+                message.channel.send("Invalid Title");
+            } else {
+                playsong(song);
+            }
+        }
+
+
+        if (message.content.toLowerCase().startsWith("play link")) {
+            let link = message.content.substr(10);
+            if (link == "" || !link) {
+                message.channel.send("Invalid Link");
+            } else {
+                playlink(link);
+            }
+        }
+
+
         if (message.content.startsWith("/poll")) {
             generatePoll(message);
         }
@@ -89,6 +145,159 @@ bot.on('voiceStateUpdate', (oldMember, newMember) => {
 
 bot.login(auth.Token);
 
+async function connectSpotify() {
+    var payload = auth.spotify.clientId + ":" + auth.spotify.clientSecret;
+    var encodedPayload = new Buffer.from(payload).toString("base64");
+
+    var opts = {
+        url: "https://accounts.spotify.com/api/token",
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Authorization": "Basic " + encodedPayload
+        },
+        body: "grant_type=client_credentials&scope=playlist-modify-public playlist-modify-private"
+    };
+
+    request(opts, function (err, res, body) {
+        let info = JSON.parse(body);
+        spotifyToken = info.access_token;
+        if (err) {
+            console.log(err);
+        } else {
+            console.log("Token Received");
+        }
+    });
+}
+
+
+async function playmusic() {
+    var opts = {
+        url: "https://api.spotify.com/v1/playlists/4y1qqP8HXKL9IoRkJAYapV",
+        method: "GET",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Authorization": "Bearer " + spotifyToken
+        }
+    };
+
+    request(opts, async function (err, res, body) {
+        let playlist = JSON.parse(body);
+        let songs = playlist.tracks.items.map(song => {
+            let artists = song.track.artists.map(artist => {
+                return artist.name;
+            });
+            return song.track.name + " " + artists.join(" ");
+        });
+        playPlaylist(songs);
+    });
+
+}
+
+async function playPlaylist(songs) {
+    let randint = Math.floor(Math.random()*songs.length);
+
+    let link = await getYoutubeId(songs[randint]);
+
+    let randints = {counter: 1};
+    randints[randint] = true;
+    console.log(songs[randint]);
+    player(link, randints, songs);
+
+}
+
+function player(link, randints, songs) {
+    let gamingChannel = bot.channels.cache.get(auth.GamingID);
+    gamingChannel.join().then(connection => {
+        dispatcher = connection.play(ytdl(link, { filter: 'audioonly' }), { volume: 0.5 });
+        dispatcher.on("finish", async function() {
+            if (randints.counter >= songs.length) {
+                return gamingChannel.leave();
+            } else {
+                let randint = Math.floor(Math.random()*songs.length);
+                while(randints[randint] == true) {
+                    randint = Math.floor(Math.random()*songs.length);
+                }
+                let link = await getYoutubeId(songs[randint]);
+                console.log(songs[randint]);
+                randints[randint] = true;
+                randints.counter ++;
+                return this.player(link, randints, songs);
+            }
+        });
+    }).catch(e => {
+        console.log(e);
+    });
+}
+
+function playlink(link) {
+    let gamingChannel = bot.channels.cache.get(auth.GamingID);
+    gamingChannel.join().then(connection => {
+        let audio = ytdl(link, { filter: 'audioonly' });
+        dispatcher = connection.play(audio, { volume: 0.5 });
+        dispatcher.on("error", e => {
+            console.log(e);
+        });
+        dispatcher.on("finish", end => {
+            gamingChannel.leave();
+        });
+    }).catch(e => {
+        console.log(e);
+    });
+}
+
+async function playsong(title) {
+    let id = await getYoutubeId(title);
+
+    if(!id) return;
+
+    let gamingChannel = bot.channels.cache.get(auth.GamingID);
+    gamingChannel.join().then(connection => {
+        let url = youtubeURL + id;
+        let audio = ytdl(url, { filter: 'audioonly' });
+        dispatcher = connection.play(audio, { volume: 0.5 });
+        dispatcher.on("error", e => {
+            console.log(e);
+        });
+        dispatcher.on("finish", end => {
+            gamingChannel.leave();
+        });
+    }).catch(e => {
+        console.log(e);
+    });
+}
+
+function stopmusic() {
+    let gamingChannel = bot.channels.cache.get(auth.GamingID);
+    gamingChannel.leave();
+}
+
+function pausemusic() {
+    if (dispatcher) {
+        dispatcher.pause();
+    }
+}
+
+function resumemusic() {
+    if (dispatcher) {
+        dispatcher.resume();
+    }
+}
+
+function setvolume(volume) {
+    if (dispatcher) {
+        dispatcher.setVolume(volume);
+    }
+}
+
+
+async function getYoutubeId(title) {
+    let search = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${title}&key=${auth.googleToken}`).then(res => res.json());
+
+    if (!search || !search.items || !search.items.length) return;
+
+    return search.items[0].id.videoId;
+}
 
 //automatically poll general channel at Noon
 if (schedulePoll) {

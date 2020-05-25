@@ -5,13 +5,15 @@
     "main": "bot.js",
     "scripts": {
         "start": "node bot.js"
-    }, 
+    },
     "authors": "Eric / Ryan",
     "dependencies": {
         "dblapi.js": "^2.4.0",
         "discord.js": "^12.2.0",
         "node-fetch": "^2.6.0",
         "opusscript": "0.0.7",
-        "winston": "^3.2.1"
+        "request": "^2.88.2",
+        "winston": "^3.2.1",
+        "ytdl-core": "^2.1.4"
     }
 }

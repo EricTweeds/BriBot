@@ -1,0 +1,10 @@
+BriBot Music Player Update patch notes:
+- BriBot will now play music in the gaming channel when commanded
+- play command, shuffles music from God vQ (spotify playlist)
+- stop command, stops the music session and BriBot leaves the channel
+- pause command, pauses the current song
+- resume command, resumes the song after pausing (does not work after stop)
+- volume <number> command, adjusts the volume, the number is a multiplier
+- play song <song name> command, plays the first search result on Youtube for entered <song name>
+- play link <link> command, plays the audio from a youtube link
+- commands can be sent in any channel or direct messages to BriBot
