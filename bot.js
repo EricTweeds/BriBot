@@ -12,6 +12,10 @@ const youtubeURL = 'https://www.youtube.com/watch?v=';
 
 let dispatcher = null;
 
+let randints = {counter: 1};
+
+let songs = [];
+
 let spotifyToken = "";
 
 const schedulePoll = false;
@@ -67,6 +71,9 @@ bot.on('message', message => {
                 break;
             case "rick roll":
                 playsong("never gonna give you up");
+                break;
+            case "next":
+                nextsong();
                 break;
         }
 
@@ -183,35 +190,42 @@ async function playmusic() {
 
     request(opts, async function (err, res, body) {
         let playlist = JSON.parse(body);
-        let songs = playlist.tracks.items.map(song => {
+        songs = playlist.tracks.items.map(song => {
             let artists = song.track.artists.map(artist => {
                 return artist.name;
             });
             return song.track.name + " " + artists.join(" ");
         });
-        playPlaylist(songs);
+        playPlaylist();
     });
 
 }
 
-async function playPlaylist(songs) {
+async function playPlaylist() {
     let randint = Math.floor(Math.random()*songs.length);
-
     let link = await getYoutubeId(songs[randint]);
-
-    let randints = {counter: 1};
     randints[randint] = true;
-    console.log(songs[randint]);
     player(link, randints, songs);
-
 }
 
-function player(link, randints, songs) {
+async function nextsong() {
+    let randint = Math.floor(Math.random()*songs.length);
+    while(randints[randint] == true) {
+        randint = Math.floor(Math.random()*songs.length);
+    }
+    randints[randint] = true;
+    randints.counter ++;
+    let link = await getYoutubeId(songs[randint]);
+    player(link);
+}
+
+function player(link) {
     let gamingChannel = bot.channels.cache.get(auth.GamingID);
     gamingChannel.join().then(connection => {
         dispatcher = connection.play(ytdl(link, { filter: 'audioonly' }), { volume: 0.5 });
         dispatcher.on("finish", async function() {
             if (randints.counter >= songs.length) {
+                randints = {counter: 1};
                 return gamingChannel.leave();
             } else {
                 let randint = Math.floor(Math.random()*songs.length);
@@ -219,10 +233,7 @@ function player(link, randints, songs) {
                     randint = Math.floor(Math.random()*songs.length);
                 }
                 let link = await getYoutubeId(songs[randint]);
-                console.log(songs[randint]);
-                randints[randint] = true;
-                randints.counter ++;
-                return player(link, randints, songs);
+                return player(link);
             }
         });
     }).catch(e => {
@@ -269,6 +280,7 @@ async function playsong(title) {
 
 function stopmusic() {
     let gamingChannel = bot.channels.cache.get(auth.GamingID);
+    randints = {counter: 1};
     gamingChannel.leave();
 }
 
