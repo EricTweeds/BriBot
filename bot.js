@@ -222,7 +222,7 @@ function player(link, randints, songs) {
                 console.log(songs[randint]);
                 randints[randint] = true;
                 randints.counter ++;
-                return this.player(link, randints, songs);
+                return player(link, randints, songs);
             }
         });
     }).catch(e => {
